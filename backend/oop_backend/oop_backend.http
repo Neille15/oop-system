@@ -1,11 +1,23 @@
 @oop_backend_HostAddress = http://localhost:5207
 
-GET {{oop_backend_HostAddress}}/todos/
-Accept: application/json
+POST {{oop_backend_HostAddress}}/api/UserDatas
+Content-Type: application/json
 
+{
+        "firstName": "Adrin",
+        "lastName" : "De Vera",
+        "email"    : "twodrian6@gmail.com",
+        "birthDate": "1995-06-12"
+}
 ###
 
-GET {{oop_backend_HostAddress}}/todos/1
-Accept: application/json
+POST {{oop_backend_HostAddress}}/api/Attendances
+Content-Type: application/json
 
-###
+{
+        "userID": 1,
+        "status"    : "present",
+        "eventDate": "2025-10-29",
+        "eventTime": "14:30:00"
+}
+

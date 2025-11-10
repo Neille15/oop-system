@@ -2,6 +2,15 @@
 # This .gitignore file was automatically created by Microsoft(R) Visual Studio.
 ################################################################################
 
-/backend/oop_backend/.vs/oop_backend
+/backend/oop_backend/.vs/
+/backend/oop_backend/bin
+
 /backend/python-face-recog/.venv
+/backend/python-face-recog/__pycache__
+
 /backend/oop_backend/obj
+
+/frontend/obj
+/frontend/bin
+
+
