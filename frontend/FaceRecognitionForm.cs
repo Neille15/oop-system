@@ -89,11 +89,11 @@ namespace frontend
                 }
 
                 UpdateStatus("Downloading face detection model...");
-                
+
                 using var httpClient = new HttpClient();
                 httpClient.Timeout = TimeSpan.FromSeconds(30);
                 var response = await httpClient.GetAsync(cascadeUrl);
-                
+
                 if (response.IsSuccessStatusCode)
                 {
                     var content = await response.Content.ReadAsByteArrayAsync();
@@ -124,13 +124,13 @@ namespace frontend
 
                 UpdateStatus("Loading face detection model...");
                 _faceCascade = new CascadeClassifier(path);
-                
+
                 if (_faceCascade == null)
                 {
                     UpdateStatus("Failed to load cascade classifier");
                     return;
                 }
-                
+
                 if (InvokeRequired)
                 {
                     Invoke(new Action(() => UpdateStatus("Face detection ready")));
@@ -147,7 +147,7 @@ namespace frontend
                 {
                     errorMsg += $" (Inner: {ex.InnerException.Message})";
                 }
-                
+
                 if (InvokeRequired)
                 {
                     Invoke(new Action(() => UpdateStatus(errorMsg)));
@@ -311,7 +311,7 @@ namespace frontend
 
                 // Convert to bitmap
                 using Bitmap faceBitmap = MatToBitmap(croppedFace);
-                
+
                 // Display the cropped face image (create a copy for display)
                 DisplayCapturedFace(new Bitmap(faceBitmap));
 
@@ -320,7 +320,7 @@ namespace frontend
 
                 // Prepare multipart/form-data
                 using var formData = new MultipartFormDataContent();
-                
+
                 // Convert bitmap to byte array
                 byte[] imageBytes;
                 using (MemoryStream ms = new MemoryStream())
@@ -338,12 +338,12 @@ namespace frontend
                     }
                     imageBytes = ms.ToArray();
                 }
-                
+
                 // Add image file
                 var imageContent = new ByteArrayContent(imageBytes);
                 imageContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/jpeg");
                 formData.Add(imageContent, "Photo", "face.jpg");
-                
+
                 // Add type field
                 formData.Add(new StringContent(type), "Type");
 
@@ -434,7 +434,7 @@ namespace frontend
                 Invoke(new Action<Bitmap>(DisplayCapturedFace), faceBitmap);
                 return;
             }
-            
+
             var oldImage = capturedFaceView.Image;
             capturedFaceView.Image = new Bitmap(faceBitmap);
             oldImage?.Dispose();
@@ -457,6 +457,11 @@ namespace frontend
         {
             using RegisterForm registerForm = new RegisterForm();
             registerForm.ShowDialog(this);
+        }
+
+        private void pictureBox1_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }
