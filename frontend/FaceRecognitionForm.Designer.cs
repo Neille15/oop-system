@@ -29,6 +29,7 @@ namespace frontend
         private void InitializeComponent()
         {
             components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FaceRecognitionForm));
             cameraView = new PictureBox();
             capturedFaceView = new PictureBox();
             modeLabel = new Label();
@@ -39,18 +40,21 @@ namespace frontend
             stopButton = new Button();
             registerButton = new Button();
             frameTimer = new System.Windows.Forms.Timer(components);
+            pictureBox1 = new PictureBox();
+            pictureBox2 = new PictureBox();
             ((System.ComponentModel.ISupportInitialize)cameraView).BeginInit();
             ((System.ComponentModel.ISupportInitialize)capturedFaceView).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBox2).BeginInit();
             SuspendLayout();
             // 
             // cameraView
             // 
-            cameraView.BackColor = Color.Black;
+            cameraView.BackColor = Color.Transparent;
             cameraView.BorderStyle = BorderStyle.FixedSingle;
-            cameraView.Location = new Point(11, 13);
-            cameraView.Margin = new Padding(3, 4, 3, 4);
+            cameraView.Location = new Point(169, 109);
             cameraView.Name = "cameraView";
-            cameraView.Size = new Size(503, 439);
+            cameraView.Size = new Size(303, 196);
             cameraView.SizeMode = PictureBoxSizeMode.Zoom;
             cameraView.TabIndex = 0;
             cameraView.TabStop = false;
@@ -59,10 +63,9 @@ namespace frontend
             // 
             capturedFaceView.BackColor = Color.Black;
             capturedFaceView.BorderStyle = BorderStyle.FixedSingle;
-            capturedFaceView.Location = new Point(520, 13);
-            capturedFaceView.Margin = new Padding(3, 4, 3, 4);
+            capturedFaceView.Location = new Point(432, 360);
             capturedFaceView.Name = "capturedFaceView";
-            capturedFaceView.Size = new Size(200, 200);
+            capturedFaceView.Size = new Size(138, 110);
             capturedFaceView.SizeMode = PictureBoxSizeMode.Zoom;
             capturedFaceView.TabIndex = 8;
             capturedFaceView.TabStop = false;
@@ -70,9 +73,10 @@ namespace frontend
             // modeLabel
             // 
             modeLabel.AutoSize = true;
-            modeLabel.Location = new Point(11, 467);
+            modeLabel.Font = new Font("Bruno Ace SC", 9.749999F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            modeLabel.Location = new Point(10, 350);
             modeLabel.Name = "modeLabel";
-            modeLabel.Size = new Size(51, 20);
+            modeLabel.Size = new Size(54, 15);
             modeLabel.TabIndex = 1;
             modeLabel.Text = "Mode:";
             // 
@@ -81,19 +85,19 @@ namespace frontend
             modeComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
             modeComboBox.FormattingEnabled = true;
             modeComboBox.Items.AddRange(new object[] { "Time In", "Time Out" });
-            modeComboBox.Location = new Point(80, 463);
-            modeComboBox.Margin = new Padding(3, 4, 3, 4);
+            modeComboBox.Location = new Point(70, 347);
             modeComboBox.Name = "modeComboBox";
-            modeComboBox.Size = new Size(171, 28);
+            modeComboBox.Size = new Size(150, 23);
             modeComboBox.TabIndex = 2;
             modeComboBox.SelectedIndexChanged += modeComboBox_SelectedIndexChanged;
             // 
             // statusLabel
             // 
             statusLabel.AutoSize = true;
-            statusLabel.Location = new Point(11, 507);
+            statusLabel.Font = new Font("Bruno Ace SC", 9.749999F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            statusLabel.Location = new Point(10, 380);
             statusLabel.Name = "statusLabel";
-            statusLabel.Size = new Size(97, 20);
+            statusLabel.Size = new Size(123, 15);
             statusLabel.TabIndex = 3;
             statusLabel.Text = "Status: Ready";
             // 
@@ -102,17 +106,18 @@ namespace frontend
             loadingLabel.AutoSize = true;
             loadingLabel.Font = new Font("Arial", 9F, FontStyle.Bold);
             loadingLabel.ForeColor = Color.Blue;
-            loadingLabel.Location = new Point(11, 547);
+            loadingLabel.Location = new Point(10, 410);
             loadingLabel.Name = "loadingLabel";
-            loadingLabel.Size = new Size(0, 18);
+            loadingLabel.Size = new Size(0, 15);
             loadingLabel.TabIndex = 4;
             // 
             // startButton
             // 
-            startButton.Location = new Point(11, 587);
-            startButton.Margin = new Padding(3, 4, 3, 4);
+            startButton.Anchor = AnchorStyles.Top;
+            startButton.Font = new Font("Bruno Ace SC", 12F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            startButton.Location = new Point(10, 440);
             startButton.Name = "startButton";
-            startButton.Size = new Size(114, 40);
+            startButton.Size = new Size(100, 30);
             startButton.TabIndex = 5;
             startButton.Text = "Start Camera";
             startButton.UseVisualStyleBackColor = true;
@@ -121,10 +126,9 @@ namespace frontend
             // stopButton
             // 
             stopButton.Enabled = false;
-            stopButton.Location = new Point(137, 587);
-            stopButton.Margin = new Padding(3, 4, 3, 4);
+            stopButton.Location = new Point(120, 440);
             stopButton.Name = "stopButton";
-            stopButton.Size = new Size(114, 40);
+            stopButton.Size = new Size(100, 30);
             stopButton.TabIndex = 6;
             stopButton.Text = "Stop Camera";
             stopButton.UseVisualStyleBackColor = true;
@@ -132,10 +136,9 @@ namespace frontend
             // 
             // registerButton
             // 
-            registerButton.Location = new Point(257, 587);
-            registerButton.Margin = new Padding(3, 4, 3, 4);
+            registerButton.Location = new Point(225, 440);
             registerButton.Name = "registerButton";
-            registerButton.Size = new Size(114, 40);
+            registerButton.Size = new Size(100, 30);
             registerButton.TabIndex = 7;
             registerButton.Text = "Register";
             registerButton.UseVisualStyleBackColor = true;
@@ -146,11 +149,33 @@ namespace frontend
             frameTimer.Interval = 33;
             frameTimer.Tick += FrameTimer_Tick;
             // 
+            // pictureBox1
+            // 
+            pictureBox1.Image = (Image)resources.GetObject("pictureBox1.Image");
+            pictureBox1.Location = new Point(-3, -27);
+            pictureBox1.Name = "pictureBox1";
+            pictureBox1.Size = new Size(700, 520);
+            pictureBox1.SizeMode = PictureBoxSizeMode.StretchImage;
+            pictureBox1.TabIndex = 9;
+            pictureBox1.TabStop = false;
+            pictureBox1.Click += pictureBox1_Click;
+            // 
+            // pictureBox2
+            // 
+            pictureBox2.BackColor = Color.Transparent;
+            pictureBox2.Image = (Image)resources.GetObject("pictureBox2.Image");
+            pictureBox2.Location = new Point(95, 36);
+            pictureBox2.Name = "pictureBox2";
+            pictureBox2.Size = new Size(462, 334);
+            pictureBox2.SizeMode = PictureBoxSizeMode.Zoom;
+            pictureBox2.TabIndex = 10;
+            pictureBox2.TabStop = false;
+            // 
             // FaceRecognitionForm
             // 
-            AutoScaleDimensions = new SizeF(8F, 20F);
+            AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(732, 640);
+            ClientSize = new Size(640, 480);
             Controls.Add(capturedFaceView);
             Controls.Add(registerButton);
             Controls.Add(stopButton);
@@ -160,14 +185,17 @@ namespace frontend
             Controls.Add(modeComboBox);
             Controls.Add(modeLabel);
             Controls.Add(cameraView);
+            Controls.Add(pictureBox2);
+            Controls.Add(pictureBox1);
             FormBorderStyle = FormBorderStyle.FixedSingle;
-            Margin = new Padding(3, 4, 3, 4);
             MaximizeBox = false;
             Name = "FaceRecognitionForm";
             StartPosition = FormStartPosition.CenterScreen;
             Text = "Face Recognition Attendance";
             ((System.ComponentModel.ISupportInitialize)cameraView).EndInit();
             ((System.ComponentModel.ISupportInitialize)capturedFaceView).EndInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBox2).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -184,6 +212,8 @@ namespace frontend
         private System.Windows.Forms.Button stopButton;
         private System.Windows.Forms.Button registerButton;
         private System.Windows.Forms.Timer frameTimer;
+        private PictureBox pictureBox1;
+        private PictureBox pictureBox2;
     }
 }
 
