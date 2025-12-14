@@ -1,67 +1,43 @@
 using System;
 using System.Drawing;
-using System.Drawing.Imaging;
-using System.IO;
-using System.Linq;
 using System.Net.Http;
-using System.Net.Http.Json;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Emgu.CV;
 using Emgu.CV.CvEnum;
-using Emgu.CV.Structure;
-using Emgu.CV.Util;
+using frontend.Services;
 
 namespace frontend
 {
     public partial class RegisterForm : Form
     {
-        private VideoCapture? _camera;
-        private CascadeClassifier? _faceCascade;
+        private readonly ICameraService _cameraService;
+        private readonly IFaceDetector _faceDetector;
+        private readonly IImageProcessor _imageProcessor;
+        private readonly IUserDataService _userDataService;
         private readonly HttpClient _httpClient;
-        private readonly string _apiBaseUrl = "http://localhost:5207/api/UserDatas";
         private bool _isProcessing = false;
 
         public RegisterForm()
         {
             InitializeComponent();
+
+            // Initialize services
             _httpClient = new HttpClient();
+            _cameraService = ServiceFactory.CreateCameraService();
+            _faceDetector = ServiceFactory.CreateFaceDetector();
+            _imageProcessor = ServiceFactory.CreateImageProcessor();
+            _userDataService = ServiceFactory.CreateUserDataService(_httpClient);
+
+            // Wire up camera events
+            _cameraService.FrameCaptured += OnFrameCaptured;
+            _cameraService.StatusChanged += OnCameraStatusChanged;
+            _faceDetector.StatusChanged += OnFaceDetectorStatusChanged;
+
+            // Initialize face detector
             frameTimer.Interval = 33;
             frameTimer.Tick += FrameTimer_Tick;
-            LoadFaceCascade();
-        }
-
-        private void LoadFaceCascade()
-        {
-            try
-            {
-                string[] possiblePaths = new[]
-                {
-                    Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "haarcascade_frontalface_default.xml"),
-                    Path.Combine(Environment.CurrentDirectory, "haarcascade_frontalface_default.xml"),
-                    "haarcascade_frontalface_default.xml"
-                };
-
-                string? cascadePath = null;
-                foreach (var path in possiblePaths)
-                {
-                    string fullPath = Path.IsPathRooted(path) ? path : Path.GetFullPath(path);
-                    if (File.Exists(fullPath))
-                    {
-                        cascadePath = fullPath;
-                        break;
-                    }
-                }
-
-                if (cascadePath != null)
-                {
-                    _faceCascade = new CascadeClassifier(cascadePath);
-                }
-            }
-            catch (Exception ex)
-            {
-                statusLabel.Text = $"Error loading face detector: {ex.Message}";
-            }
+            Task.Run(async () => await _faceDetector.InitializeAsync());
         }
 
         private void RegisterForm_Load(object? sender, EventArgs e)
@@ -73,8 +49,8 @@ namespace frontend
         {
             try
             {
-                _camera = new VideoCapture(0);
-                if (!_camera.IsOpened)
+                _cameraService.Start();
+                if (!_cameraService.IsOpened)
                 {
                     MessageBox.Show("Failed to open camera.", "Camera Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
@@ -91,102 +67,105 @@ namespace frontend
 
         private void FrameTimer_Tick(object? sender, EventArgs e)
         {
-            if (_camera == null || !_camera.IsOpened)
+            // Frame processing is handled by camera service events
+        }
+
+        private void OnFrameCaptured(object? sender, Mat frame)
+        {
+            if (_isProcessing || !_faceDetector.IsReady)
                 return;
 
             try
             {
-                using Mat frame = new Mat();
-                if (!_camera.Read(frame) || frame.IsEmpty)
-                    return;
-
                 // Convert to RGB for display
                 using Mat rgbFrame = new Mat();
                 CvInvoke.CvtColor(frame, rgbFrame, ColorConversion.Bgr2Rgb);
 
                 // Detect faces
-                Rectangle[] faces = DetectFaces(frame);
+                Rectangle[] faces = _faceDetector.DetectFaces(frame);
 
                 // Draw bounding boxes
                 if (faces.Length > 0)
                 {
                     foreach (var face in faces)
                     {
-                        CvInvoke.Rectangle(rgbFrame, face, new MCvScalar(0, 255, 0), 2);
+                        CvInvoke.Rectangle(rgbFrame, face, new Emgu.CV.Structure.MCvScalar(0, 255, 0), 2);
                     }
-                    captureButton.Enabled = true;
+                    if (InvokeRequired)
+                    {
+                        Invoke(new Action(() => captureButton.Enabled = true));
+                    }
+                    else
+                    {
+                        captureButton.Enabled = true;
+                    }
                 }
                 else
                 {
-                    captureButton.Enabled = false;
+                    if (InvokeRequired)
+                    {
+                        Invoke(new Action(() => captureButton.Enabled = false));
+                    }
+                    else
+                    {
+                        captureButton.Enabled = false;
+                    }
                 }
 
                 // Display frame
-                Bitmap bitmap = MatToBitmapRgb(rgbFrame);
-                var oldImage = cameraView.Image;
-                cameraView.Image = bitmap;
-                oldImage?.Dispose();
+                Bitmap bitmap = _imageProcessor.MatToBitmapRgb(rgbFrame);
+                if (InvokeRequired)
+                {
+                    Invoke(new Action<Bitmap>(UpdateCameraView), bitmap);
+                }
+                else
+                {
+                    UpdateCameraView(bitmap);
+                }
             }
             catch (Exception ex)
             {
-                statusLabel.Text = $"Error processing frame: {ex.Message}";
+                if (InvokeRequired)
+                {
+                    Invoke(new Action<string>(UpdateStatus), $"Error processing frame: {ex.Message}");
+                }
+                else
+                {
+                    UpdateStatus($"Error processing frame: {ex.Message}");
+                }
             }
         }
 
-        private Rectangle[] DetectFaces(Mat frame)
+        private void UpdateCameraView(Bitmap bitmap)
         {
-            if (_faceCascade == null)
-                return Array.Empty<Rectangle>();
-
-            try
-            {
-                using Mat gray = new Mat();
-                CvInvoke.CvtColor(frame, gray, ColorConversion.Bgr2Gray);
-                CvInvoke.EqualizeHist(gray, gray);
-
-                Rectangle[] faces = _faceCascade.DetectMultiScale(
-                    gray,
-                    1.1,
-                    3,
-                    new Size(30, 30),
-                    Size.Empty
-                );
-
-                return faces;
-            }
-            catch
-            {
-                return Array.Empty<Rectangle>();
-            }
+            var oldImage = cameraView.Image;
+            cameraView.Image = new Bitmap(bitmap);
+            oldImage?.Dispose();
         }
 
-        private Bitmap MatToBitmapRgb(Mat mat)
+        private void OnCameraStatusChanged(object? sender, string message)
         {
-            using Image<Rgb, byte> image = mat.ToImage<Rgb, byte>();
-            return image.AsBitmap();
+            UpdateStatus(message);
         }
 
-        private string BitmapToBase64(Bitmap bitmap)
+        private void OnFaceDetectorStatusChanged(object? sender, string message)
         {
-            using MemoryStream ms = new MemoryStream();
-            var jpegEncoder = ImageCodecInfo.GetImageEncoders().FirstOrDefault(codec => codec.FormatID == ImageFormat.Jpeg.Guid);
-            if (jpegEncoder != null)
+            UpdateStatus(message);
+        }
+
+        private void UpdateStatus(string message)
+        {
+            if (InvokeRequired)
             {
-                var encoderParams = new EncoderParameters(1);
-                encoderParams.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, (long)90);
-                bitmap.Save(ms, jpegEncoder, encoderParams);
+                Invoke(new Action<string>(UpdateStatus), message);
+                return;
             }
-            else
-            {
-                bitmap.Save(ms, ImageFormat.Jpeg);
-            }
-            byte[] imageBytes = ms.ToArray();
-            return Convert.ToBase64String(imageBytes);
+            statusLabel.Text = message;
         }
 
         private async void CaptureButton_Click(object? sender, EventArgs e)
         {
-            if (_isProcessing || _camera == null || !_camera.IsOpened)
+            if (_isProcessing || !_cameraService.IsOpened)
                 return;
 
             // Validate form fields
@@ -208,7 +187,7 @@ namespace frontend
                 return;
             }
 
-            if (birthDatePicker.Value == null || birthDatePicker.Value > DateTime.Now.AddYears(-10))
+            if (birthDatePicker.Value > DateTime.Now.AddYears(-10))
             {
                 MessageBox.Show("Please enter a valid birth date.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
@@ -220,8 +199,9 @@ namespace frontend
 
             try
             {
-                using Mat frame = new Mat();
-                if (!_camera.Read(frame) || frame.IsEmpty)
+                // Capture current frame
+                Mat? frame = _cameraService.CaptureFrame();
+                if (frame == null || frame.IsEmpty)
                 {
                     statusLabel.Text = "Failed to capture frame.";
                     _isProcessing = false;
@@ -230,7 +210,7 @@ namespace frontend
                 }
 
                 // Detect face and crop
-                Rectangle[] faces = DetectFaces(frame);
+                Rectangle[] faces = _faceDetector.DetectFaces(frame);
                 if (faces.Length == 0)
                 {
                     MessageBox.Show("No face detected. Please position your face in the camera view.", "No Face Detected", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -242,70 +222,32 @@ namespace frontend
 
                 // Crop the first detected face
                 Rectangle faceRect = faces[0];
-                int padding = 50; 
-                int x = Math.Max(0, faceRect.X - padding);
-                int y = Math.Max(0, faceRect.Y - padding);
-                int width = Math.Min(frame.Width - x, faceRect.Width + padding * 2);
-                int height = Math.Min(frame.Height - y, faceRect.Height + padding * 2);
+                using Mat croppedFace = _imageProcessor.CropWithPadding(frame, faceRect, padding: 50);
+                using Bitmap faceBitmap = _imageProcessor.MatToBitmap(croppedFace);
 
-                using Mat croppedFace = new Mat(frame, new Rectangle(x, y, width, height));
-                using Bitmap faceBitmap = MatToBitmap(croppedFace);
+                // Convert to bytes
+                byte[] imageBytes = _imageProcessor.BitmapToJpegBytes(faceBitmap);
 
-                // Prepare multipart/form-data
-                using var formData = new MultipartFormDataContent();
-                
-                // Convert bitmap to byte array
-                byte[] imageBytes;
-                using (MemoryStream ms = new MemoryStream())
-                {
-                    var jpegEncoder = ImageCodecInfo.GetImageEncoders().FirstOrDefault(codec => codec.FormatID == ImageFormat.Jpeg.Guid);
-                    if (jpegEncoder != null)
-                    {
-                        var encoderParams = new EncoderParameters(1);
-                        encoderParams.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, (long)90);
-                        faceBitmap.Save(ms, jpegEncoder, encoderParams);
-                    }
-                    else
-                    {
-                        faceBitmap.Save(ms, ImageFormat.Jpeg);
-                    }
-                    imageBytes = ms.ToArray();
-                }
-                
-                // Add image file
-                var imageContent = new ByteArrayContent(imageBytes);
-                imageContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/jpeg");
-                formData.Add(imageContent, "Photo", "face.jpg");
-                
-                // Add form fields
-                formData.Add(new StringContent(firstNameTextBox.Text.Trim()), "FirstName");
-                formData.Add(new StringContent(lastNameTextBox.Text.Trim()), "LastName");
-                formData.Add(new StringContent(emailTextBox.Text.Trim()), "Email");
-                formData.Add(new StringContent(birthDatePicker.Value.ToString("yyyy-MM-dd")), "BirthDate");
-                // StudentNumber is optional - backend will use Email as fallback if not provided
-                formData.Add(new StringContent(""), "StudentNumber");
-
+                // Register user
                 statusLabel.Text = "Registering user...";
-                var response = await _httpClient.PostAsync(_apiBaseUrl, formData);
+                var userData = await _userDataService.RegisterUserAsync(
+                    imageBytes,
+                    firstNameTextBox.Text.Trim(),
+                    lastNameTextBox.Text.Trim(),
+                    emailTextBox.Text.Trim(),
+                    birthDatePicker.Value.ToString("yyyy-MM-dd"),
+                    studentNumberTextBox.Text.Trim()
+                );
 
-                if (response.IsSuccessStatusCode)
-                {
-                    var result = await response.Content.ReadAsStringAsync();
-                    MessageBox.Show("User registered successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    statusLabel.Text = "Registration successful!";
-                    
-                    // Clear form
-                    firstNameTextBox.Clear();
-                    lastNameTextBox.Clear();
-                    emailTextBox.Clear();
-                    birthDatePicker.Value = DateTime.Now.AddYears(-25);
-                }
-                else
-                {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    MessageBox.Show($"Registration failed: {errorContent}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    statusLabel.Text = $"Registration failed: {response.StatusCode}";
-                }
+                MessageBox.Show("User registered successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                statusLabel.Text = "Registration successful!";
+
+                // Clear form
+                firstNameTextBox.Clear();
+                lastNameTextBox.Clear();
+                emailTextBox.Clear();
+                birthDatePicker.Value = DateTime.Now.AddYears(-25);
+                studentNumberTextBox.Clear();
             }
             catch (Exception ex)
             {
@@ -319,21 +261,10 @@ namespace frontend
             }
         }
 
-        private Bitmap MatToBitmap(Mat mat)
-        {
-            using Image<Bgr, byte> image = mat.ToImage<Bgr, byte>();
-            return image.AsBitmap();
-        }
-
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
             frameTimer?.Stop();
-            if (_camera != null)
-            {
-                _camera.Dispose();
-                _camera = null;
-            }
-            _faceCascade?.Dispose();
+            _cameraService?.Dispose();
             _httpClient?.Dispose();
             base.OnFormClosing(e);
         }

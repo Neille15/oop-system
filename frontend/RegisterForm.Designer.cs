@@ -38,6 +38,8 @@ namespace frontend
             this.emailTextBox = new System.Windows.Forms.TextBox();
             this.birthDateLabel = new System.Windows.Forms.Label();
             this.birthDatePicker = new System.Windows.Forms.DateTimePicker();
+            this.studentNumberLabel = new System.Windows.Forms.Label();
+            this.studentNumberTextBox = new System.Windows.Forms.TextBox();
             this.captureButton = new System.Windows.Forms.Button();
             this.statusLabel = new System.Windows.Forms.Label();
             this.frameTimer = new System.Windows.Forms.Timer(this.components);
@@ -120,10 +122,26 @@ namespace frontend
             this.birthDatePicker.TabIndex = 8;
             this.birthDatePicker.Value = new System.DateTime(2000, 1, 1, 0, 0, 0, 0);
             // 
+            // studentNumberLabel
+            // 
+            this.studentNumberLabel.AutoSize = true;
+            this.studentNumberLabel.Location = new System.Drawing.Point(12, 441);
+            this.studentNumberLabel.Name = "studentNumberLabel";
+            this.studentNumberLabel.Size = new System.Drawing.Size(95, 15);
+            this.studentNumberLabel.TabIndex = 9;
+            this.studentNumberLabel.Text = "Student Number:";
+            // 
+            // studentNumberTextBox
+            // 
+            this.studentNumberTextBox.Location = new System.Drawing.Point(113, 438);
+            this.studentNumberTextBox.Name = "studentNumberTextBox";
+            this.studentNumberTextBox.Size = new System.Drawing.Size(200, 23);
+            this.studentNumberTextBox.TabIndex = 10;
+            // 
             // captureButton
             // 
             this.captureButton.Enabled = false;
-            this.captureButton.Location = new System.Drawing.Point(12, 445);
+            this.captureButton.Location = new System.Drawing.Point(12, 474);
             this.captureButton.Name = "captureButton";
             this.captureButton.Size = new System.Drawing.Size(150, 35);
             this.captureButton.TabIndex = 9;
@@ -134,7 +152,7 @@ namespace frontend
             // statusLabel
             // 
             this.statusLabel.AutoSize = true;
-            this.statusLabel.Location = new System.Drawing.Point(12, 490);
+            this.statusLabel.Location = new System.Drawing.Point(12, 519);
             this.statusLabel.Name = "statusLabel";
             this.statusLabel.Size = new System.Drawing.Size(42, 15);
             this.statusLabel.TabIndex = 10;
@@ -149,9 +167,11 @@ namespace frontend
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(424, 515);
+            this.ClientSize = new System.Drawing.Size(424, 544);
             this.Controls.Add(this.statusLabel);
             this.Controls.Add(this.captureButton);
+            this.Controls.Add(this.studentNumberTextBox);
+            this.Controls.Add(this.studentNumberLabel);
             this.Controls.Add(this.birthDatePicker);
             this.Controls.Add(this.birthDateLabel);
             this.Controls.Add(this.emailTextBox);
@@ -183,6 +203,8 @@ namespace frontend
         private System.Windows.Forms.TextBox emailTextBox;
         private System.Windows.Forms.Label birthDateLabel;
         private System.Windows.Forms.DateTimePicker birthDatePicker;
+        private System.Windows.Forms.Label studentNumberLabel;
+        private System.Windows.Forms.TextBox studentNumberTextBox;
         private System.Windows.Forms.Button captureButton;
         private System.Windows.Forms.Label statusLabel;
         private System.Windows.Forms.Timer frameTimer;
