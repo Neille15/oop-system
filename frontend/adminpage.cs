@@ -23,7 +23,7 @@ namespace frontend
             {
                 MessageBox.Show("Login Successful", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-                using dashboard dashboard = new dashboard();
+                using Dashboard dashboard = new Dashboard();
                 dashboard.ShowDialog(this);
             }
             else
