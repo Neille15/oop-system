@@ -10,9 +10,9 @@ using System.Windows.Forms;
 
 namespace frontend
 {
-    public partial class adminpage : Form
+    public partial class AdminPage : Form
     {
-        public adminpage()
+        public AdminPage()
         {
             InitializeComponent();
             this.passwordadmin.PasswordChar = '*';
